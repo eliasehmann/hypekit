@@ -20,6 +20,7 @@ import sqlite3
 import threading
 
 from . import catalog as C
+from . import characters as P
 from . import game as G
 from . import sounds as S
 from . import textures as X
@@ -58,6 +59,8 @@ class Kit:
         self._lib = None
         self._db = None
         self._archives = {}
+        self._persos = None
+        self._texmap = None
         self._lock = threading.RLock()
 
     # ---- setup -----------------------------------------------------------------------------------------------
@@ -192,6 +195,90 @@ class Kit:
             r['sounds'] = self.sql('SELECT s.id, s.title, s.seconds FROM sound_lines j JOIN sounds s '
                                    'ON s.id = j.sound_id WHERE j.line_id = ?', (rid,))
         return r
+
+    # ---- characters (3D) -------------------------------------------------------------------------------------
+    @property
+    def scanner(self):
+        with self._lock:
+            if self._persos is None:
+                self._persos = P.Scanner(self.game, self.cache_dir)
+            return self._persos
+
+    def persos_status(self, start=True):
+        """Character scan: {'state': ready|scanning|idle|error, done, total, level, count}; start=True starts it."""
+        return self.scanner.start() if start else self.scanner.status()
+
+    def persos(self, query='', level=None, named=True, wait=False):
+        """Character records (see schema 'perso'); None while the background scan runs (wait=True: scan here)."""
+        recs = self.scanner.run() if wait else self.scanner.records
+        if recs is None:
+            self.scanner.start()
+            return None
+        q = (query or '').lower()
+        return [r for r in recs if (not named or r['name']) and (not level or r['level'] == level)
+                and (not q or q in r['name'].lower() or q in r['level'].lower())]
+
+    def perso(self, rid):
+        """One character record + 'animations': [{index (state), frames, fps, initial}] (loads the level: a few seconds)."""
+        from . import geo, level as L
+        lv, _, so = rid.partition(':')
+        recs = [r for r in (self.scanner.records or []) if r['id'] == rid]
+        try:
+            w = L.load(self.game, lv)
+            p = geo.Perso(w, int(so, 16))
+        except (FileNotFoundError, ValueError, TypeError, KeyError) as ex:
+            raise NotFound(rid) from ex
+        r = dict(recs[0]) if recs else dict(id=rid, level=lv, so=so, name=p.name or '')
+        r['type'] = 'perso'
+        r['animations'] = []
+        for i, st in enumerate(p.states()):
+            an = p.anim(st)
+            if an and an['nframes']:
+                r['animations'].append(dict(index=i, frames=an['nframes'], fps=an['speed'] or 30,
+                                        initial=st == p.state_initial))
+        return r
+
+    def _texture_rgba(self, name):
+        """Texture by the name a material uses ('Hype/hype_corps.tga', any slash or case) -> (w, h, RGBA) or None."""
+        with self._lock:
+            if self._texmap is None:
+                self._texmap = {}
+                p = self.game.archives().get('Textures')
+                if p:
+                    self._archives.setdefault('Textures', X.Archive(p, 'Textures'))
+                    for i, (path, *_r) in enumerate(self._archives['Textures'].entries):
+                        self._texmap.setdefault(path.lower().rsplit('.', 1)[0], i)
+            a = self._archives.get('Textures')
+        key = name.replace('\\', '/').lower().rsplit('.', 1)[0]
+        i = self._texmap.get(key)
+        if i is None:
+            return None
+        try:
+            return a.rgba(i)
+        except ValueError:
+            return None
+
+    def glb(self, rid, state=None):
+        """GLB bytes of a character (state index or its initial state); cached on disk."""
+        from . import level as L
+        from . import models as M
+        lv, _, so = rid.partition(':')
+        d = os.path.join(self.cache_dir, 'glb', self.scanner.path.rsplit('_', 1)[-1].split('.')[0])
+        f = os.path.join(d, f'{lv}_{so}_{"i" if state is None else int(state)}.glb')
+        if os.path.exists(f):
+            with builtins.open(f, 'rb') as fh:
+                return fh.read()
+        try:
+            data = M.perso_glb(L.load(self.game, lv), int(so, 16), self._texture_rgba, state)
+        except (FileNotFoundError, ValueError, TypeError, KeyError) as ex:
+            raise NotFound(rid) from ex
+        except IndexError as ex:
+            raise NotAvailable(f'{rid}: no state {state}') from ex
+        os.makedirs(d, exist_ok=True)
+        with builtins.open(f + '.tmp', 'wb') as fh:
+            fh.write(data)
+        os.replace(f + '.tmp', f)
+        return data
 
     # ---- payloads (bytes) ------------------------------------------------------------------------------------
     def sound(self, rid):

@@ -10,9 +10,12 @@ JSON (GET):
   /api/textures?q=&archive=&limit=&offset=
   /api/levels                                  levels with line counts and place names
   /api/script/<level>                          lines of a level with their voice sound ids
+  /api/persos?q=&level=&all=1                  {status: character scan progress, items: records or null}
+  /api/perso/<id>                              one character + its animated states
   /api/get/<id>                                one record + links
   /api/schema                                  JSON Schema of the records
-Payloads: /api/wav/<id> (audio/wav, Range supported), /api/png/<id>?mip=0 (image/png).
+Payloads: /api/wav/<id> (audio/wav, Range supported), /api/png/<id>?mip=0 (image/png),
+  /api/glb/<perso id>?state=N (model/gltf-binary; default state = the initial one).
 Errors: {"error": text} with 404 (no record) / 422 (cannot decode here) / 400.
 Everything else is a static file of hypekit/web/.
 """
@@ -64,7 +67,7 @@ def make_handler(kit):
             self.send_response(code)
             self.send_header('Content-Type', ctype)
             self.send_header('Content-Length', str(len(body)))
-            self.send_header('Cache-Control', 'max-age=3600' if self.path.startswith(('/api/wav/', '/api/png/'))
+            self.send_header('Cache-Control', 'max-age=3600' if self.path.startswith(('/api/wav/', '/api/png/', '/api/glb/'))
                              else 'no-cache')
             for k, v in (extra or {}).items():
                 self.send_header(k, v)
@@ -140,6 +143,15 @@ def make_handler(kit):
                 return self._json(kit.get(arg))
             if name == 'schema':
                 return self._json(schema.json_schema())
+            if name == 'persos':
+                st = kit.persos_status()
+                items = kit.persos(q.get('q', ''), q.get('level'), q.get('all') != '1') if st['state'] == 'ready' else None
+                return self._json(dict(status=st, items=items))
+            if name == 'perso':
+                return self._json(kit.perso(arg))
+            if name == 'glb':
+                state = int(q['state']) if q.get('state') not in (None, '') else None
+                return self._bytes(payloads.get(('glb', arg, state), lambda: kit.glb(arg, state)), 'model/gltf-binary')
             if name == 'wav':
                 return self._bytes(payloads.get(('wav', arg), lambda: kit.wav(arg)), 'audio/wav')
             if name == 'png':

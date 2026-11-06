@@ -6,6 +6,8 @@
     python -m hypekit lines  [query] [--level brigand2] [--speaker RAJOTH] [--common]
     python -m hypekit textures [query] [--archive Vignette]
     python -m hypekit levels
+    python -m hypekit persos [query] [--level fort] [--all]   characters (first run scans all levels, ~2 min)
+    python -m hypekit glb <perso id> [--state N] [--out FILE]   one character as .glb
     python -m hypekit get <id>                           one record + links
     python -m hypekit export <id> [<id> ...] [--out DIR] .wav / .png
     python -m hypekit sql "<SELECT ...>"                 read-only SQL on the catalog
@@ -66,6 +68,14 @@ def main(argv=None):
         if name == 'textures':
             p.add_argument('--archive')
     sub.add_parser('levels')
+    p = sub.add_parser('persos')
+    p.add_argument('query', nargs='?', default='')
+    p.add_argument('--level')
+    p.add_argument('--all', action='store_true')
+    p = sub.add_parser('glb')
+    p.add_argument('id')
+    p.add_argument('--state', type=int)
+    p.add_argument('--out')
     p = sub.add_parser('get')
     p.add_argument('id')
     p = sub.add_parser('export')
@@ -131,6 +141,22 @@ def main(argv=None):
             else:
                 for r in rows:
                     out.write(f"{r['level']:<12} {r['lines']:>4} lines  {r['place']}\n")
+        elif a.cmd == 'persos':
+            if kit.persos_status(start=False)['state'] != 'ready':
+                sys.stderr.write('hypekit: scanning all levels for characters (once, ~2 min)...\n')
+            rows = kit.persos(a.query, a.level, not a.all, wait=True)
+            rows = rows[:lim] if lim else rows
+            if a.json:
+                emit(rows)
+            else:
+                for r in rows:
+                    out.write(f"{r['id']:<22} {r['name'] or '-':<28} {r['states']:>4} states  {r['parts']:>4} parts\n")
+                out.write(f'{len(rows)} characters\n')
+        elif a.cmd == 'glb':
+            path = a.out or f"{a.id.replace(':', '_')}{'' if a.state is None else '_' + str(a.state)}.glb"
+            with open(path, 'wb') as f:
+                f.write(kit.glb(a.id, a.state))
+            emit([path]) if a.json else out.write(path + '\n')
         elif a.cmd == 'get':
             emit(kit.get(a.id))
         elif a.cmd == 'export':

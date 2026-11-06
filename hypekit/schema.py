@@ -40,6 +40,17 @@ RECORDS = {
             'format': {'enum': ['pal8', 'rgb565', 'argb1555', 'argb4444', '']}, 'mips': _I, 'error': _S,
         },
     },
+    'perso': {
+        'description': 'A character / animated figure placed in a level. Payload: glb(id, state) (glTF binary, '
+                       'one node per animation channel, sprites marked extras.sprite). Records come from a one-time '
+                       'background scan of all levels.',
+        'properties': {
+            'id': {**_S, 'description': "'<level>:<superobject hex>'"}, 'level': _S, 'so': _S,
+            'name': {**_S, 'description': "instance name, e.g. 'Hype', 'I_Granslak'"}, 'family': _S,
+            'states': {**_I, 'description': 'number of states (animations)'}, 'parts': _I,
+            'frames': {**_I, 'description': 'frames of the initial state'}, 'fps': _I,
+        },
+    },
 }
 
 

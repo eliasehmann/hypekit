@@ -54,10 +54,12 @@ async function render() {
   const { page, params } = route();
   document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.dataset.page === page));
   if (document.activeElement !== qbox) qbox.value = params.q || '';
-  qbox.placeholder = { search: 'Search everything', sounds: 'Search sounds', script: 'Search dialogue', textures: 'Search textures' }[page] || 'Search';
+  qbox.placeholder = { search: 'Search everything', sounds: 'Search sounds', script: 'Search dialogue', textures: 'Search textures', models: 'Search models' }[page] || 'Search';
   filters.innerHTML = '';
+  view.classList.toggle('full', page === 'models');
+  if (page !== 'models') M.key = null;
   await getLevels();
-  const fn = { search: pageSearch, sounds: pageSounds, script: pageScript, textures: pageTextures }[page] || pageSearch;
+  const fn = { search: pageSearch, sounds: pageSounds, script: pageScript, textures: pageTextures, models: pageModels }[page] || pageSearch;
   try { await fn(params); } catch (e) { view.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
   if (params.play && params.play !== cur?.id) api('get/' + encodeURIComponent(params.play)).then(s => play(s)).catch(e => toast(e.message));  // deep link: ?play=<sound id>
 }
@@ -215,6 +217,98 @@ async function pageSearch(p) {
   if (r.lines.length) { sec('Dialogue', r.lines.length, 'script'); r.lines.forEach(l => view.append(turnRow(l, true))); }
   if (r.textures.length) { sec('Textures', r.textures.length, 'textures'); const g = document.createElement('div'); g.className = 'grid'; r.textures.forEach(t => g.append(texTile(t))); view.append(g); }
   if (!r.sounds.length && !r.lines.length && !r.textures.length) view.innerHTML = '<div class="empty">Nothing found</div>';
+}
+
+// ---- models ---------------------------------------------------------------------------------------------
+// The list + stage stay in place while only the selection (id, state) changes; the WebGL viewer is created once.
+const M = { key: null, viewer: null, canvas: null, loaded: null, items: [] };
+
+async function pageModels(p) {
+  filters.append(seg([['', 'Most parts'], ['az', 'A–Z']], p.sort, v => setParam('sort', v)));
+  filters.append(levelSelect(p.level, v => setParam('level', v)));
+  const key = JSON.stringify([p.q, p.sort, p.level]);
+  if (M.key !== key || !view.querySelector('.models')) {
+    const r = await api('persos', { q: p.q, level: p.level });
+    if (!r.items) return scanProgress(r.status);
+    M.key = key;
+    const groups = new Map();
+    for (const x of r.items) (groups.get(x.name) || groups.set(x.name, []).get(x.name)).push(x);
+    M.items = [...groups.values()];
+    if (p.sort === 'az') M.items.sort((a, b) => a[0].name.localeCompare(b[0].name));
+    else M.items.sort((a, b) => b[0].parts - a[0].parts || b[0].states - a[0].states || a[0].name.localeCompare(b[0].name));
+    view.innerHTML = `<div class="models"><div class="mlist"><div class="count">${M.items.length} models</div></div>
+      <div class="stage"><div class="tools"></div><div class="msg"></div></div></div>`;
+    const list = $('.mlist', view);
+    for (const g of M.items) {
+      const el = document.createElement('div');
+      el.className = 'mitem'; el.dataset.ids = ' ' + g.map(x => x.id).join(' ') + ' ';
+      const lv = g.length === 1 ? (levelName[g[0].level] || g[0].level) : `${g.length} levels`;
+      el.innerHTML = `<div class="n">${esc(g[0].name)}</div><div class="s">${g[0].parts} parts · ${g[0].states} states · ${esc(lv)}</div>`;
+      el.onclick = () => setParam('id', g[0].id) ;
+      list.append(el);
+    }
+    if (!M.canvas) M.canvas = document.createElement('canvas');
+    $('.stage', view).insertBefore(M.canvas, $('.msg', view));
+    if (!M.viewer) { const { Viewer } = await import('./viewer.js'); M.viewer = new Viewer(M.canvas); }
+    M.loaded = null;
+  }
+  const id = p.id || M.items[0]?.[0].id;
+  if (!id) { $('.msg', view).textContent = 'Nothing found'; return; }
+  view.querySelectorAll('.mitem').forEach(e => e.classList.toggle('on', e.dataset.ids.includes(` ${id} `)));
+  const want = `${id}|${p.state ?? ''}`;
+  if (M.loaded === want) return;
+  await showModel(id, p.state, M.loaded?.split('|')[0] === id);
+  M.loaded = want;
+}
+
+async function scanProgress(st) {
+  view.innerHTML = `<div class="scan">Reading the 3D data of every level, once.<div class="barbg"><div class="barfg"></div></div>
+    <small></small></div>`;
+  const tick = async () => {
+    if (route().page !== 'models' || !$('.scan', view)) return;
+    const r = await api('persos', {}).catch(() => null);
+    const s = r?.status || st;
+    if (s.state === 'ready') return render();
+    if (s.state === 'error') { $('.scan small', view).textContent = s.error; return; }
+    $('.barfg', view).style.width = `${s.total ? 100 * s.done / s.total : 2}%`;
+    $('.scan small', view).textContent = s.total ? `${s.done} / ${s.total} levels${s.level ? ' · ' + s.level : ''} · about ${Math.max(5, Math.round((s.total - s.done) * 1.6))} s left` : 'Starting…';
+    setTimeout(tick, 1000);
+  };
+  tick();
+}
+
+async function showModel(id, state, sameModel) {
+  const tools = $('.stage .tools', view), msg = $('.stage .msg', view);
+  const g = M.items.find(g => g.some(x => x.id === id)) || [{ id, name: id, level: id.split(':')[0] }];
+  const rec = g.find(x => x.id === id) || g[0];
+  msg.textContent = 'Loading…';
+  const info = await api('perso/' + encodeURIComponent(id));
+  const cur = state ?? String(info.animations.find(s => s.initial)?.index ?? '');
+  tools.innerHTML = `<span class="ti">${esc(rec.name)}</span>`;
+  if (g.length > 1) {
+    const sel = document.createElement('select');
+    sel.innerHTML = g.map(x => `<option value="${esc(x.id)}"${x.id === id ? ' selected' : ''}>${esc(levelName[x.level] || x.level)} · ${esc(x.level)}</option>`).join('');
+    sel.onchange = () => go('models', { ...route().params, id: sel.value, state: '' }, true);
+    tools.append(sel);
+  }
+  const ss = document.createElement('select');
+  ss.title = 'Animation (state)';
+  ss.innerHTML = info.animations.map(s => `<option value="${s.index}"${String(s.index) === cur ? ' selected' : ''}>State ${s.index} · ${s.frames} frames${s.initial ? ' · initial' : ''}</option>`).join('');
+  ss.onchange = () => setParam('state', ss.value);
+  const step = d => { const i = ss.selectedIndex + d; if (i >= 0 && i < ss.options.length) setParam('state', ss.options[i].value); };
+  const prev = Object.assign(document.createElement('button'), { className: 'chip', textContent: '‹', title: 'Previous state', onclick: () => step(-1) });
+  const next = Object.assign(document.createElement('button'), { className: 'chip', textContent: '›', title: 'Next state', onclick: () => step(1) });
+  const pause = Object.assign(document.createElement('button'), { className: 'chip', textContent: M.viewer.playing ? 'Pause' : 'Play' });
+  pause.onclick = () => { M.viewer.setPlaying(!M.viewer.playing); pause.textContent = M.viewer.playing ? 'Pause' : 'Play'; };
+  const reset = Object.assign(document.createElement('button'), { className: 'chip', textContent: 'Reset view', onclick: () => M.viewer.frameView() });
+  const url = `/api/glb/${encodeURIComponent(id)}${cur !== '' ? '?state=' + cur : ''}`;
+  const dlA = Object.assign(document.createElement('a'), { className: 'chip', textContent: 'GLB', href: url, download: `${rec.name || id.replace(':', '_')}${cur !== '' ? '_state' + cur : ''}.glb`, title: 'Download as glTF binary' });
+  tools.append(ss, prev, next, pause, reset, dlA);
+  try {
+    const r = await M.viewer.load(url, { keepView: sameModel });
+    msg.textContent = '';
+    tools.insertAdjacentHTML('beforeend', `<span class="count" style="padding:0">${r.frames} frames · ${r.duration.toFixed(1)} s</span>`);
+  } catch (e) { msg.textContent = e.message || String(e); }
 }
 
 // ---- drawer ---------------------------------------------------------------------------------------------

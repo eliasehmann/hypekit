@@ -131,6 +131,16 @@ class Game:
             return ci_path(self.levels, 'Fix.lng')
         return ci_path(self.levels, level, level + '.lng')
 
+    def ci_level_file(self, *parts):
+        """A file under Gamedata/World/Levels (case-insensitive), None if missing."""
+        return ci_path(self.levels, *parts)
+
+    def model_levels(self):
+        """Level folders that hold <level>.sna + .rtb (3D data), sorted."""
+        return [d for d in sorted(os.listdir(self.levels), key=str.lower)
+                if os.path.isdir(os.path.join(self.levels, d)) and ci_path(self.levels, d, d + '.sna')
+                and ci_path(self.levels, d, d + '.rtb')]
+
     def archives(self):
         """Texture archives: {'Textures': path, 'Vignette': path} (those present)."""
         out = {}

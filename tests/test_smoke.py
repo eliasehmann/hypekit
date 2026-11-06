@@ -56,6 +56,22 @@ class Smoke(unittest.TestCase):
             self.assertEqual(png[:8], b'\x89PNG\r\n\x1a\n')
             self.assertEqual(struct.unpack('>II', png[16:24]), (t['width'], t['height']))
 
+    def test_character_glb(self):
+        from hypekit import characters, level
+        lv = self.kit.game.model_levels()[0]
+        recs = characters.scan_level(level.load(self.kit.game, lv))
+        self.assertTrue(recs)
+        self.assertEqual(set(recs[0]), set(schema.RECORDS['perso']['properties']))
+        r = max(recs, key=lambda x: x['parts'])
+        info = self.kit.perso(r['id'])
+        self.assertTrue(info['animations'])
+        glb = self.kit.glb(r['id'], info['animations'][0]['index'])
+        self.assertEqual(glb[:4], b'glTF')
+        n = struct.unpack_from('<I', glb, 12)[0]
+        g = __import__('json').loads(glb[20:20 + n])
+        self.assertTrue(g['meshes'])
+        self.assertTrue(g.get('images'), 'textures resolved from Textures.cnt')
+
     def test_not_found(self):
         with self.assertRaises(hypekit.NotFound):
             self.kit.get('nope:0')
