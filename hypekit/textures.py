@@ -5,7 +5,7 @@ XOR key, checksum, offset, size). Each file is XORed with its key (per 4-byte wo
 GF: u8 version, u32 w, u32 h, u8 channels, u8 RLE escape, u16 palette colors, u8 palette bpp, 3 bytes, u32 flags,
 u32 pixel total (all mips), u8 type (5 pal8, 10 rgb565, 11 argb1555, 12 argb4444); palette; RLE planes.
 Textures.cnt is stored bottom-up, Vignette.cnt top-down: images here are always upright.
-Writing archives (texture mods) stays in modding/tools/cnt_tool.py for now (needs Pillow).
+Writing archives (texture mods) is not part of the toolkit yet.
 """
 import mmap
 import re

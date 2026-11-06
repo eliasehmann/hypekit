@@ -20,7 +20,7 @@ import sys
 
 from . import bnm, csb, sna, text
 
-VERSION = 3                  # 3: text reader keeps accented lines
+VERSION = 4                  # 3: text reader keeps accented lines, 4: letter-based junk filter
 
 PLACES = [   # website-tools/wiki/places.md
     ("Gogoud's Manor", 'manoir manoir2 manoir3 manoir4'), ('The Forest', 'brigand brigand2 brigand3 brigand4'),

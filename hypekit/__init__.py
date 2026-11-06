@@ -25,7 +25,7 @@ from . import game as G
 from . import sounds as S
 from . import textures as X
 
-__version__ = '0.1.0'
+__version__ = '1.0.0'
 __all__ = ['open', 'Kit', 'NotFound', 'NotAvailable', '__version__']
 
 NotAvailable = S.NotAvailable

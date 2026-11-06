@@ -379,7 +379,7 @@ def join(parts):
 
 def find_vgmstream(path=None):
     """vgmstream-cli path or None: explicit path, $HYPEKIT_VGMSTREAM, a bundled copy (vendor/vgmstream next to the
-    package or inside a PyInstaller app), the workspace's sources/tools/vgmstream (development), then PATH."""
+    package or inside a PyInstaller app), a development checkout's tools folder, then PATH."""
     exe = 'vgmstream-cli.exe' if sys.platform == 'win32' else 'vgmstream-cli'
     here = os.path.dirname(os.path.abspath(__file__))
     bases = [getattr(sys, '_MEIPASS', None), os.path.dirname(here)]

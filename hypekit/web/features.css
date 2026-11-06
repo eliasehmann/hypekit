@@ -182,3 +182,7 @@ kbd { font: 600 .72rem Inter, system-ui, sans-serif; background: var(--bg-3); bo
 .pathbox { background: var(--bg-3); border-radius: 12px; padding: 12px 14px; font: 500 .9rem ui-monospace, Consolas, monospace; word-break: break-all; color: var(--text); }
 .homefoot { text-align: center; color: var(--muted); font-size: .9rem; display: grid; gap: 8px; }
 .homefoot .path { color: var(--text-2); }
+
+/* bare=1 (screenshots): content right under the top bar */
+body.bare .head { display: none; }
+body.bare #view > .section:first-child { padding-top: 34px; }

@@ -3,7 +3,7 @@
 One node per animation channel with TRS keyframes (Montreal animations: compressed per-channel transforms + a
 parent hierarchy per frame); rest pose = frame 0. Sprites (Playmobil faces) are quads with extras.sprite=True that a
 viewer turns to the camera; additive light textures carry extras.additive=True on the material.
-Game axes are z-up right-handed; glTF is y-up: (x, y, z) -> (x, z, -y). Ported from modding/tools/models/export_gltf.py.
+Game axes are z-up right-handed; glTF is y-up: (x, y, z) -> (x, z, -y).
 """
 import array
 import json

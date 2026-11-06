@@ -1,4 +1,4 @@
-"""Ubi Sound Studio .csb sound scripts (disc: Sound\\*.csb and Sound\\<Language>\\V_*.csb; text, CPA editor format).
+"""Ubi Sound Studio .csb sound scripts (disc: Sound\\*.csb and Sound\\<Language>\\V_*.csb; plain text).
 
 The sound designers' project files: one per group (P_Hype = Hype, PA_Loups = wolves, PB_Rajoth = boss, M_<place> =
 music, V_<level> = voices). The game itself plays the compiled .bnm banks; the .csb give the names and groups.

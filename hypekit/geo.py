@@ -1,6 +1,6 @@
 """Hype's 3D data (Montreal engine) from a loaded level (level.World): superobjects, characters (Perso), their
 states/animations, physical objects, geometric objects, materials and texture names. Layouts follow Raymap
-(byvar/raymap, OpenSpace readers, EngineVersion.Montreal branches). Ported from modding/tools/models/hypegeo.py.
+(byvar/raymap, OpenSpace readers, EngineVersion.Montreal branches). 
 
 Everything here stays in game axes (z-up); models.py converts to glTF.
 """

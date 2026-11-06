@@ -393,6 +393,7 @@ async function render() {
     view.replaceChildren(head('Something went wrong.', esc(e.message)));
   }
   if (changed) scrollTo(0, 0); else if (!params.line) scrollTo(0, y);
+  document.body.classList.toggle('bare', params.bare === '1');      // bare=1: no page heading (screenshots)
   lastPage = page;
   view.classList.toggle('selecting', SEL.on);
   if (focused) {                                   // typing in a search field: keep the very same input focused

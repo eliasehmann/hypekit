@@ -1,14 +1,14 @@
-"""Save slots (Gamedata/SaveGame/<slot>/): decode and summarize (read-only). Ported from modding/tools/save.
+"""Save slots (Gamedata/SaveGame/<slot>/): decode and summarize (read-only).
 
-.sav codec (reverse engineered from FUN_00550860, the 'cmp::pc' mode-2 writer):
+.sav file format:
   byte0 = (sum of stream values) ^ 0x53; bytes1-4 = u32 length ^ 0x54555657;
   stream byte = bitrev8(counter) ^ 0xB9 ^ value, counter from 0x57; content = 8-byte blocks against a 256-entry
   dictionary (index, mask, changed bytes; full blocks replace the entry; a short last block ends with its length).
-Level000.sav records (FUN_004c6e30): u16 block | u32 offset | u32 flags | payload; flags top byte = type
+Level000.sav records: u16 block | u32 offset | u32 flags | payload; flags top byte = type
   (01/02/04/08 = 1/2/4/8 bytes, 10 = u32 length + buffer, 11 = pointer: u16 block + u32 offset).
   Block id = (module << 8) | block index, offset relative to that SNA block's base in Fix.sna + <level>.sna.
 General000.sav: text lines: level, checkpoint, playtime (ms).
-Meanings of the fixed offsets: docs/savegame.md in the modding repo.
+The fixed offsets below were found by comparing saves before and after known in-game changes.
 """
 import os
 import struct
