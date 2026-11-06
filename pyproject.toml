@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hypekit"
+version = "0.1.0"
+description = "Read Hype: The Time Quest game data (sounds, dialogue, textures) as plain Python data"
+requires-python = ">=3.10"
+dependencies = []          # standard library only (core); the app wrapper adds pywebview later
+
+[project.scripts]
+hypekit = "hypekit.cli:main"
+
+[tool.setuptools]
+packages = ["hypekit"]
