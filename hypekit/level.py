@@ -82,6 +82,28 @@ class World:
         return re.match(rb'[\x20-\x7e]*', self.blocks[k][1][o:o + 80]).group().decode() if k else None
 
 
+def sectors(w):
+    """The level's sector superobjects (type 8): [(superobject addr, sector data addr, sector name)]."""
+    out = []
+    for (mod, bid, src), (base, data) in w.blocks.items():
+        if src == 'fix':
+            continue
+        for o in range(0, len(data) - 0x38, 4):
+            if struct.unpack_from('<I', data, o)[0] != 8:
+                continue
+            a = base + o
+            if (a + 4) not in w.ptrs:
+                continue
+            sd = w.u32(a + 4)
+            if sd is None or (sd + 156) not in w.ptrs:
+                continue
+            name = w.cstr(w.u32(sd + 156))
+            if not name:
+                continue
+            out.append((a, sd, name))
+    return out
+
+
 def load(game, level):
     """Cached World of game's level (thread-safe; the last KEEP levels stay loaded)."""
     key = (game.root, level)

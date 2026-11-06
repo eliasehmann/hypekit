@@ -16,6 +16,7 @@ from .textures import png_bytes
 # Per-character fixes, by instance name: animation channels to leave out. Frame 0 shows every weapon copy:
 # Hype ch14 = crossbow in the hand, ch18 = sword at the hip (keeps ch15 sword in the hand, ch19 crossbow on the back).
 SKIP_CHANNELS = {'Hype': (14, 18)}
+FIXED_FPS = False             # True: every clip at a flat 30 fps (old website exports); default: the game's speed
 
 
 def conv(v):
@@ -69,6 +70,7 @@ def gltf_matrix(m4):
 class Glb:
     def __init__(s, textures):
         s.textures = textures      # name -> (w, h, RGBA bytes) or None
+        s.png = png_bytes          # (w, h, RGBA bytes) -> PNG bytes (exporters may plug in a smaller encoder)
         s.bin = bytearray()
         s.g = dict(asset=dict(version='2.0', generator='hypekit'), scene=0,
                    scenes=[dict(nodes=[])], nodes=[], meshes=[], materials=[], textures=[], images=[],
@@ -114,7 +116,7 @@ class Glb:
                         a[k] = 0
                 px = a.tobytes()
             alpha = any(px[k] != 255 for k in range(3, len(px), 4))
-            data = png_bytes(w, h, px)
+            data = s.png(w, h, px)
             s.g['images'].append(dict(bufferView=s.view(data), mimeType='image/png', name=e['texture']))
             s.g['textures'].append(dict(sampler=0, source=len(s.g['images']) - 1))
             m['pbrMetallicRoughness']['baseColorTexture'] = dict(index=len(s.g['textures']) - 1)
@@ -261,7 +263,7 @@ def add_perso(g, w, so, root, samplers, channels, state_index=None, max_frames=N
             kw = dict(scale=[abs(x) for x in conv(scale)]) if scale else {}
             g.add_geo(chan[c], geo, f'part{oi}', **kw)
     # keyframes (also sets the rest pose = frame 0)
-    fps = an['speed'] or 30                         # the animation's own frame rate
+    fps = 30 if FIXED_FPS else (an['speed'] or 30)  # the animation's own frame rate (see FIXED_FPS)
     times = [f / fps for f in range(nf)]
     tacc = g.acc('<f', times, 'SCALAR', target=None)
     g.g['accessors'][tacc]['min'], g.g['accessors'][tacc]['max'] = [0], [times[-1]]

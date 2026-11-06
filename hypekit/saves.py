@@ -77,6 +77,8 @@ def records(raw):
             n = SIZES[t]
         else:
             raise ValueError(f'unknown record type {t:#x} at {p - 10}')
+        if p + n > len(raw):
+            raise ValueError('truncated record')
         out.append((blk, off, flags, bytes(raw[p:p + n])))
         p += n
     return out
@@ -120,15 +122,17 @@ class _PersoInfo:
     """Name, stdGame and DsgVar layout of one perso (also invisible actors without 3D data)."""
 
     def __init__(self, w, so):
+        self.so = so
         self.perso = w.u32(so + 4)
         self.sg = w.u32(self.perso + 4)
+        self.d3 = w.u32(self.perso)                   # 3D data
         self.name = FIXNAMES.get(self.perso)
         if not self.name:
             try:
                 self.name = geo.Perso(w, so).name
             except Exception:                         # noqa: BLE001 - persos without 3D data
                 self.name = None
-        self.dsg, self.buf = [], None
+        self.dsg, self.buf, self.bufsize = [], None, None   # dsg: (offset, type, save type) per DsgVar
         brain = w.u32(self.perso + 0x10)
         mind = w.u32(brain) if brain and w.find(brain)[0] else None
         dsgmem = w.u32(mind + 0xc) if mind and w.find(mind)[0] else None
@@ -137,7 +141,8 @@ class _PersoInfo:
             dv = w.u32(pp) if pp and w.find(pp)[0] else None
             self.buf = w.u32(dsgmem + 8)
             if dv and w.find(dv)[0]:
-                info, n = w.u32(dv + 4), w.u32(dv + 0xc)
+                # Hype's AI_tdstDsgVar: +0 default init, +4 info array, +8 buffer size, +0xc count (u32)
+                info, self.bufsize, n = w.u32(dv + 4), w.u32(dv + 8), w.u32(dv + 0xc)
                 for i in range(min(n or 0, 1024)):
                     self.dsg.append(tuple(w.u32(info + 16 * i + k) for k in (0, 4, 8)))
 

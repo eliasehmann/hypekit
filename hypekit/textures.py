@@ -141,7 +141,8 @@ def mip_sizes(w, h, total):
     return sizes
 
 
-def _rle_planes(b, o, channels, total, esc):
+def rle_decode(b, o, channels, total, esc):
+    """RLE planes of a GF (escape, value, count runs) starting at offset o -> (planes, end offset)."""
     planes = []
     esc_b = bytes((esc,))
     for _ in range(channels):
@@ -159,7 +160,7 @@ def _rle_planes(b, o, channels, total, esc):
         if len(p) != total:
             raise ValueError('RLE run overflows plane')
         planes.append(bytes(p))
-    return planes
+    return planes, o
 
 
 _UNPACK = {}
@@ -186,7 +187,7 @@ def decode_gf(data, level=0):
     """GF bytes -> (w, h, RGBA bytes) of one mip level, in stored row order."""
     h = header(data)
     pal = data[26:26 + h['pal_colors'] * h['pal_bpp']]
-    planes = _rle_planes(data, 26 + len(pal), h['channels'], h['total'], h['esc'])
+    planes, _ = rle_decode(data, 26 + len(pal), h['channels'], h['total'], h['esc'])
     levels = mip_sizes(h['width'], h['height'], h['total'])
     start = sum(w * hh for w, hh in levels[:level])
     w, hh = levels[level]

@@ -7,8 +7,8 @@ Repo `<workspace>\hypekit` (6th nested repo, workspace = `Documents\hype-install
   fallback; case-insensitive file lookup via `game.ci_path`.
 - Records are JSON-ready dicts with stable ids; change their shape only together with `schema.py` VERSION.
 - Decoders were ported from `modding/tools` (sound/, text/lngdump, cnt_tool read side, cheats/sna + lvl/rtb,
-  models/hypegeo -> geo.py, models/export_gltf -> models.py). `web/vendor/three` = three.js r170 (MIT). The originals
-  stay; fix bugs in both until modding/tools becomes thin wrappers. Texture *writing* stays in cnt_tool (Pillow).
+  models/hypegeo -> geo.py, models/export_gltf -> models.py). `web/vendor/three` = three.js r170 (MIT). The modding
+  originals are thin wrappers over these modules now (2026-11-06): fix decoder bugs here only. Texture *writing* stays in cnt_tool (Pillow).
 - Never bundle game files. The app reads the user's install. vendor/ (vgmstream binaries) is not committed.
 - Dev: run with `python -s -m hypekit ...` from this folder (`-I` drops the cwd). The cache goes to `<workspace>\work\hypekit`.
   Microsoft Store Python virtualizes AppData writes, so vgmstream can't see them. That's why work/ is used in dev.
