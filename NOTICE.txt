@@ -1,0 +1,24 @@
+Hype Toolkit 1.0
+
+An unofficial fan project for Hype: The Time Quest. Not affiliated with or endorsed by Ubisoft or Playmobil.
+Free to use for personal, non-commercial purposes. Provided as is, without warranty of any kind.
+
+The toolkit contains no game files. It needs your own installed copy of the game and only reads it: nothing in
+your game folder is changed. Everything it shows (sounds, dialogue, pictures, models, saves) comes from that copy.
+Its own data (an index and decoded sounds) lives in %LOCALAPPDATA%\hypekit and can be deleted at any time.
+
+Thanks to the Raymap project (byvar/raymap) for documenting the engine's file layouts.
+
+Third-party software included
+-----------------------------
+vgmstream (decodes the game's MPEG audio)   ISC-style licence, see vgmstream-COPYING.txt
+  https://github.com/vgmstream/vgmstream
+mpg123 (libmpg123-0.dll, used by vgmstream) GNU LGPL 2.1, dynamically linked; source: https://www.mpg123.de
+three.js (3D viewer)                         MIT licence, Copyright 2010-2024 three.js authors
+Inter (typeface)                             SIL Open Font License 1.1, Copyright 2020 The Inter Project Authors
+pywebview (app window)                       BSD 3-Clause licence, Copyright Roman Sirokov and contributors
+pythonnet, clr-loader (WebView2 bridge)      MIT licence, Copyright the Python for .NET contributors
+bottle, proxy_tools                          MIT licence
+cffi, pycparser                              MIT / BSD licences
+Python 3.10                                  Python Software Foundation License
+PyInstaller bootloader                       GPL 2 with the bootloader exception (allows distribution)
