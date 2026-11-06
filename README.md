@@ -8,8 +8,24 @@ Three layers:
 | Layer | What | Status |
 |---|---|---|
 | **core** (`hypekit/`) | decoders + SQLite catalog + Python API | M1 ✓ |
-| **api** | CLI with `--json` ✓, local HTTP server, MCP (later) | M1 CLI ✓, M2 HTTP |
-| **app** | web UI (HTML/JS, three.js) in a pywebview window, PyInstaller builds per OS | M2+ |
+| **api** | CLI with `--json`, local HTTP API (`server.py`), MCP later | M1 CLI ✓, M2 HTTP ✓ |
+| **app** | web UI (`hypekit/web/`: plain HTML/JS) in a native window | M2 ✓ (Search, Sounds, Script, Textures) |
+
+Next: M3 models and animations (three.js) · M4 save viewer, pywebview + PyInstaller Windows build ·
+M5 own MPEG decoder, macOS/Linux builds (GitHub Actions), MCP wrapper, write operations.
+
+## App
+
+```
+python -m hypekit app          # window: pywebview if installed, else Edge/Chrome app mode, else the browser
+python -m hypekit serve        # just the server: http://127.0.0.1:8765/
+```
+Deep links: `#/sounds?kind=voice&level=toras`, `#/script?level=toras&line=toras:5`, `?play=<sound id>` on any page.
+Keys: space = play/pause, `/` = search, Esc = close the panel.
+
+HTTP API (GET, JSON): `/api/info`, `/api/find?q=`, `/api/sounds|lines|textures?q=&...&limit=&offset=`,
+`/api/levels`, `/api/script/<level>`, `/api/get/<id>`, `/api/schema`. Payloads: `/api/wav/<id>`, `/api/png/<id>`
+(both support Range). The server binds 127.0.0.1 only.
 
 ## Python
 

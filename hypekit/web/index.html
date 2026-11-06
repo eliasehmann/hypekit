@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hype Toolkit</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="side">
+  <div class="brand">Hype <span>Toolkit</span></div>
+  <nav>
+    <a href="#/search" data-page="search">Search</a>
+    <a href="#/sounds" data-page="sounds">Sounds</a>
+    <a href="#/script" data-page="script">Script</a>
+    <a href="#/textures" data-page="textures">Textures</a>
+  </nav>
+  <div class="foot" id="info"></div>
+</aside>
+<main>
+  <header class="bar">
+    <input id="q" type="search" placeholder="Search" autocomplete="off" spellcheck="false">
+    <div id="filters" class="filters"></div>
+  </header>
+  <section id="view" class="view"></section>
+</main>
+<aside id="drawer" class="drawer" hidden>
+  <button class="x" id="drawer-close" title="Close">×</button>
+  <div id="drawer-body"></div>
+</aside>
+<footer class="player" id="player" hidden>
+  <button id="pp" class="pp" title="Play / pause (space)">▶</button>
+  <div class="meta"><div id="p-title" class="t"></div><div id="p-sub" class="s"></div></div>
+  <canvas id="wave" height="56"></canvas>
+  <div id="p-time" class="time">0:00</div>
+  <button id="p-loop" class="chip" title="Loop">Loop</button>
+  <a id="p-dl" class="chip" download>WAV</a>
+</footer>
+<audio id="audio" preload="auto"></audio>
+<script type="module" src="app.js"></script>
+</body>
+</html>

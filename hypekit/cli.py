@@ -11,6 +11,8 @@
     python -m hypekit sql "<SELECT ...>"                 read-only SQL on the catalog
     python -m hypekit schema [sound|line|texture]        JSON Schema of the records
     python -m hypekit build [--force]                    (re)build the catalog
+    python -m hypekit serve [--port 8765]                local HTTP API + web UI (server.py)
+    python -m hypekit app [--browser]                    the desktop app (app.py)
 Options: --game DIR, --disc DIR (repeatable; .csb sound names), --cache DIR, --limit N (default 50), --json.
 Without --json: a short table (id, then the main field) and a count.
 """
@@ -18,6 +20,7 @@ import argparse
 import json
 import os
 import sys
+import time
 
 import hypekit
 from . import schema
@@ -72,6 +75,10 @@ def main(argv=None):
     p.add_argument('query')
     p = sub.add_parser('schema')
     p.add_argument('kind', nargs='?', choices=sorted(schema.RECORDS))
+    p = sub.add_parser('serve')
+    p.add_argument('--port', type=int, default=8765)
+    p = sub.add_parser('app')
+    p.add_argument('--browser', action='store_true')
     p = sub.add_parser('build')
     p.add_argument('--force', action='store_true')
     a = ap.parse_args(argv)
@@ -130,6 +137,21 @@ def main(argv=None):
             os.makedirs(a.out, exist_ok=True)
             done = [kit.export(rid, a.out) for rid in a.ids]
             emit(done) if a.json else out.write('\n'.join(done) + '\n')
+        elif a.cmd == 'serve':
+            from . import server
+            kit.build()
+            srv, url = server.serve(kit, a.port)
+            out.write(f'hypekit: serving {url}  (Ctrl+C to stop)\n')
+            out.flush()
+            try:
+                while True:
+                    time.sleep(3600)
+            except KeyboardInterrupt:
+                srv.shutdown()
+                srv.server_close()
+        elif a.cmd == 'app':
+            from . import app
+            return app.run(kit, a.browser)
         elif a.cmd == 'sql':
             if not a.query.lstrip().lower().startswith(('select', 'with', 'pragma')):
                 sys.stderr.write('hypekit: sql is read-only (SELECT / WITH / PRAGMA)\n')

@@ -14,3 +14,6 @@ hypekit = "hypekit.cli:main"
 
 [tool.setuptools]
 packages = ["hypekit"]
+
+[tool.setuptools.package-data]
+hypekit = ["web/*"]

@@ -102,7 +102,7 @@ class Kit:
         with self._lock:
             return [_rec(r) for r in self.db.execute(query, params)]
 
-    def sounds(self, query='', kind=None, level=None, speaker=None, limit=None):
+    def sounds(self, query='', kind=None, level=None, speaker=None, limit=None, offset=0):
         w, p = [], []
         if query:
             w.append("(title LIKE ? ESCAPE '\\' OR file_name LIKE ? ESCAPE '\\' OR text LIKE ? ESCAPE '\\' "
@@ -119,9 +119,9 @@ class Kit:
         if speaker:
             w.append('speaker LIKE ?')
             p.append(speaker)
-        return self.sql('SELECT * FROM sounds' + _where(w) + ' ORDER BY rowid' + _limit(limit), p)
+        return self.sql('SELECT * FROM sounds' + _where(w) + ' ORDER BY rowid' + _limit(limit, offset), p)
 
-    def lines(self, query='', level=None, speaker=None, common=False, limit=None):
+    def lines(self, query='', level=None, speaker=None, common=False, limit=None, offset=0):
         w, p = [], []
         if query:
             w.append("text LIKE ? ESCAPE '\\'")
@@ -134,9 +134,9 @@ class Kit:
             p.append(speaker)
         if not common:
             w.append('common = 0')
-        return self.sql('SELECT * FROM lines' + _where(w) + ' ORDER BY rowid' + _limit(limit), p)
+        return self.sql('SELECT * FROM lines' + _where(w) + ' ORDER BY rowid' + _limit(limit, offset), p)
 
-    def textures(self, query='', archive=None, limit=None):
+    def textures(self, query='', archive=None, limit=None, offset=0):
         w, p = [], []
         if query:
             w.append("path LIKE ? ESCAPE '\\'")
@@ -144,15 +144,30 @@ class Kit:
         if archive:
             w.append('archive = ?')
             p.append(archive)
-        return self.sql('SELECT * FROM textures' + _where(w) + ' ORDER BY rowid' + _limit(limit), p)
+        return self.sql('SELECT * FROM textures' + _where(w) + ' ORDER BY rowid' + _limit(limit, offset), p)
 
     def levels(self):
-        lv = self.sql('SELECT level, count(*) AS lines FROM lines WHERE common = 0 GROUP BY level ORDER BY level')
-        from .soundnames import level_label, place_of
+        """Levels in game order (place by place; 'Fix' = shared text first), with line counts and place names."""
+        from .soundnames import PLACES, level_label, place_of
+        order = {lv: i for i, lv in enumerate(x for _, lvs in PLACES for x in lvs.split())}
+        lv = self.sql('SELECT level, count(*) AS lines FROM lines WHERE common = 0 GROUP BY level')
+        lv.sort(key=lambda r: (r['level'] != 'Fix', order.get(r['level'], 999), r['level']))
         for r in lv:
             r['place'] = place_of(r['level'])
             r['label'] = level_label(r['level'])
         return lv
+
+    def script(self, level):
+        """All lines of one level in order, each with 'sounds': [voice sound ids] (for a script view)."""
+        rows = self.sql('SELECT l.*, group_concat(j.sound_id) AS sound_ids FROM lines l LEFT JOIN sound_lines j '
+                        'ON j.line_id = l.id WHERE l.level = ? GROUP BY l.id ORDER BY l.n', (level,))
+        for r in rows:
+            ids = r.pop('sound_ids', None)
+            r['sounds'] = sorted(ids.split(',')) if ids else []
+        return rows
+
+    def count(self, table):
+        return self.db.execute(f'SELECT count(*) FROM {table}').fetchone()[0]
 
     def find(self, query, limit=20):
         """Search everything: {'sounds': [...], 'lines': [...], 'textures': [...]}."""
@@ -242,5 +257,5 @@ def _where(w):
     return (' WHERE ' + ' AND '.join(w)) if w else ''
 
 
-def _limit(n):
-    return f' LIMIT {int(n)}' if n else ''
+def _limit(n, offset=0):
+    return f' LIMIT {int(n)} OFFSET {int(offset or 0)}' if n else ''
