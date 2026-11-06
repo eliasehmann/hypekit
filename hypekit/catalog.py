@@ -17,7 +17,7 @@ import time
 from . import text as T
 from . import textures as X
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 4          # 2: MPEG lengths from vgmstream metadata, 3: text junk filter
 
 DDL = """
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);

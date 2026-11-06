@@ -13,6 +13,9 @@ export class Viewer {
     this.camera = new THREE.PerspectiveCamera(35, 1, 0.01, 1000);
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
+    this.controls.autoRotate = true;            // a slow turntable until the first touch, like the website
+    this.controls.autoRotateSpeed = 0.8;
+    this.controls.addEventListener('start', () => { this.controls.autoRotate = false; });
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x404050, 2.2));
     const sun = new THREE.DirectionalLight(0xffffff, 1.6);
     sun.position.set(3, 5, 4);
@@ -79,6 +82,7 @@ export class Viewer {
     this.prepare(this.root);
     this.scene.add(this.root);
     this.mixer = new THREE.AnimationMixer(this.root);
+    this.mixer.timeScale = this.speed || 1;
     const clip = gltf.animations[0];
     this.duration = clip ? clip.duration : 0;
     if (clip) {
@@ -107,6 +111,18 @@ export class Viewer {
 
   setPlaying(on) { this.playing = on; if (this.action) this.action.paused = !on; }
   get time() { return this.action ? this.action.time : 0; }
+  setSpeed(x) { this.speed = x; if (this.mixer) this.mixer.timeScale = x; }
+  seek(t) {                                     // jump to t seconds (paused or playing)
+    if (!this.action) return;
+    this.action.time = Math.max(0, Math.min(t, this.duration || 0));
+    this.mixer.update(0);
+  }
+  setAutoRotate(on) { this.controls.autoRotate = on; }
+  get autoRotate() { return this.controls.autoRotate; }
+  screenshot() {                                // PNG data URL of the current view (transparent background)
+    this.renderer.render(this.scene, this.camera);
+    return this.canvas.toDataURL('image/png');
+  }
 
   frame() {
     const dt = this.clock.getDelta();

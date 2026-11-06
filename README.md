@@ -20,12 +20,22 @@ Next: M5 own MPEG decoder, macOS/Linux builds (GitHub Actions), MCP wrapper, wri
 python -m hypekit app          # window: pywebview if installed, else Edge/Chrome app mode, else the browser
 python -m hypekit serve        # just the server: http://127.0.0.1:8765/
 ```
-Deep links: `#/sounds?kind=voice&level=toras`, `#/models?id=fort:94c230c&state=5`, `#/script?level=toras&line=toras:5`, `?play=<sound id>` on any page.
-Keys: space = play/pause, `/` = search, Esc = close the panel.
+Design = the website's (glass top nav, big "Title." heads, pill segments, cards, Modern/Light theme).
+Every page: search, a main segment, **Filters** (facet chips with counts, multi-select, removable tags), sort, ★ starred
+filter, Select → star or export a ZIP, Play all (queue with next/previous). Dialogue reads place by place and plays a
+whole scene; textures open in a lightbox (←/→, 1×/2×/4×, checker/black/white); models have speed, a frame scrubber,
+turntable, PNG snapshot, full screen and figures/pickups/objects; saves can be compared.
+Keys: Ctrl K quick search · / search the page · J K move · Enter play · S star · X select · F filters · Space pause ·
+N P next/previous · [ ] previous/next move · Esc close. Stars are kept in the browser (localStorage).
+Deep links: any page state is in the URL, e.g. `#/sounds?kind=voice&speaker=Gustus&length=long&sort=long`,
+`#/dialogue?level=toras&line=toras:5`, `#/models?id=fort:94c230c&state=5`, `?play=<sound id>`, `filters=1` (panel open),
+`?k=<text>` (quick search open), `?theme=light`.
 
-HTTP API (GET, JSON): `/api/info`, `/api/find?q=`, `/api/sounds|lines|textures?q=&...&limit=&offset=`,
-`/api/levels`, `/api/script/<level>`, `/api/persos?q=&level=`, `/api/perso/<id>`, `/api/get/<id>`, `/api/schema`.
-Payloads: `/api/wav/<id>`, `/api/png/<id>`, `/api/glb/<perso id>?state=N` (all support Range). The server binds 127.0.0.1 only.
+HTTP API (GET, JSON): `/api/info`, `/api/q/<sounds|lines|textures|persos>?<filters>&sort=&limit=&offset=&facets=1`
+(-> `{items, total, facets}`; filters in `hypekit/query.py`, comma = any of), `/api/find?q=`, `/api/levels`,
+`/api/script/<level>`, `/api/perso/<id>`, `/api/saves`, `/api/save/<slot>`, `/api/get/<id>`, `/api/schema`.
+Payloads: `/api/wav/<id>`, `/api/png/<id>`, `/api/glb/<perso id>?state=N` (Range supported);
+`POST /api/zip {"ids": [...]}` -> ZIP of WAV/PNG/GLB. The server binds 127.0.0.1 only.
 
 ## Windows build
 
@@ -61,7 +71,7 @@ kit.save('SaveGame3')                      # health, mana, gold, inventory, spel
 ## CLI
 
 ```
-python -m hypekit info | find <q> | sounds | lines | textures | levels | get <id> | export <id>... --out DIR
+python -m hypekit info | find <q> | sounds | lines | textures | levels | script <level> | get <id> | export <id>... --out DIR
 python -m hypekit persos [q] [--level L] [--all] | glb <perso id> [--state N] [--out FILE]
 python -m hypekit saves | save <slot>
 python -m hypekit sql "SELECT ..." | schema [sound|line|texture|perso|save] | build [--force]

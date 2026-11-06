@@ -28,7 +28,8 @@ def fragments(path):
                 continue
             if not TEXTY.match(s) or not re.search('[A-Za-z]', s):
                 continue
-            if sum(ch > '\x7e' for ch in s) > 1:     # pointer bytes that happen to be printable
+            if sum(ch > '\x7e' for ch in s) > max(1, len(s) // 5):   # pointer bytes that happen to be printable
+                # (proportional: real French/Spanish/German lines have several accents, pointers are mostly high bytes)
                 continue
             if SPEAKER.match(s):
                 out.append(('who', s.rstrip(' :').strip()))
@@ -36,6 +37,8 @@ def fragments(path):
                 out.append(('seq', s))              # sequence / label names
             elif len(s) <= 4 and ' ' not in s:
                 continue                            # 4-byte floats that happen to be printable
+            elif max(len(w) for w in s.split()) < 2:
+                continue                            # 'X ñ', 'H ñ X ñ': pointer bytes, no word of 2+ letters
             else:
                 out.append(('txt', s + ('' if s.endswith(' ') else ' ')))   # highlighted words are separate strings
     return out

@@ -20,7 +20,7 @@ import sys
 
 from . import bnm, csb, sna, text
 
-VERSION = 2
+VERSION = 3                  # 3: text reader keeps accented lines
 
 PLACES = [   # website-tools/wiki/places.md
     ("Gogoud's Manor", 'manoir manoir2 manoir3 manoir4'), ('The Forest', 'brigand brigand2 brigand3 brigand4'),

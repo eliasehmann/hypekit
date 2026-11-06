@@ -6,6 +6,7 @@
     python -m hypekit lines  [query] [--level brigand2] [--speaker RAJOTH] [--common]
     python -m hypekit textures [query] [--archive Vignette]
     python -m hypekit levels
+    python -m hypekit script <level>                     a level's dialogue in order, with voice sound ids
     python -m hypekit persos [query] [--level fort] [--all]   characters (first run scans all levels, ~2 min)
     python -m hypekit glb <perso id> [--state N] [--out FILE]   one character as .glb
     python -m hypekit saves | save <slot>               save slots / one slot in full
@@ -69,6 +70,8 @@ def main(argv=None):
         if name == 'textures':
             p.add_argument('--archive')
     sub.add_parser('levels')
+    p = sub.add_parser('script')
+    p.add_argument('level')
     p = sub.add_parser('persos')
     p.add_argument('query', nargs='?', default='')
     p.add_argument('--level')
@@ -113,14 +116,11 @@ def main(argv=None):
     try:
         kit = hypekit.open(a.game, a.cache, a.disc)
     except FileNotFoundError as ex:
-        folder = None
-        if a.cmd == 'app':                           # the desktop app asks once and remembers the folder
+        if a.cmd == 'app':                           # the desktop app opens on its "choose the game folder" screen
             from . import app
-            folder = app.ask_game_folder()
-        if not folder:
-            sys.stderr.write(f'hypekit: {ex}\n')
-            return 2
-        kit = hypekit.open(folder, a.cache, a.disc)
+            return app.run(None, a.browser, cache=a.cache, discs=a.disc)
+        sys.stderr.write(f'hypekit: {ex}\n')
+        return 2
     lim = a.limit or None
     try:
         if a.cmd in ('info', 'build'):
@@ -144,6 +144,15 @@ def main(argv=None):
             else:
                 _table(rows, a.cmd[:-1], out)
                 out.write(f'{len(rows)} {a.cmd}{" (limit, use --limit 0 for all)" if lim and len(rows) == lim else ""}\n')
+        elif a.cmd == 'script':
+            rows = kit.script(a.level)
+            if a.json:
+                emit(rows)
+            else:
+                for r in rows:
+                    voice = f"  [{', '.join(r['sounds'])}]" if r['sounds'] else ''
+                    out.write(f"{r['id']:<14} {r['speaker'] or '-':<12} {r['text'][:110]}{voice}\n")
+                out.write(f'{len(rows)} lines\n')
         elif a.cmd == 'levels':
             rows = kit.levels()
             if a.json:
@@ -187,7 +196,7 @@ def main(argv=None):
         elif a.cmd == 'serve':
             from . import server
             kit.build()
-            srv, url = server.serve(kit, a.port)
+            srv, url = server.serve(kit, a.port, cache=a.cache, discs=a.disc)
             out.write(f'hypekit: serving {url}  (Ctrl+C to stop)\n')
             out.flush()
             try:
@@ -198,7 +207,7 @@ def main(argv=None):
                 srv.server_close()
         elif a.cmd == 'app':
             from . import app
-            return app.run(kit, a.browser)
+            return app.run(kit, a.browser, cache=a.cache, discs=a.disc)
         elif a.cmd == 'sql':
             if not a.query.lstrip().lower().startswith(('select', 'with', 'pragma')):
                 sys.stderr.write('hypekit: sql is read-only (SELECT / WITH / PRAGMA)\n')

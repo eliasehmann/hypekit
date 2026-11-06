@@ -8,12 +8,15 @@ Textures.cnt is stored bottom-up, Vignette.cnt top-down: images here are always 
 Writing archives (texture mods) stays in modding/tools/cnt_tool.py for now (needs Pillow).
 """
 import mmap
+import re
 import os
 import struct
 import zlib
 from dataclasses import dataclass, asdict
 
 TYPE_PAL8, TYPE_565, TYPE_1555, TYPE_4444 = 5, 10, 11, 12
+# Vignette screens stored with red and blue swapped (the era screens epoque1-4, also under map/)
+SWAPPED_RB = re.compile(r'epoque\d\.gf$', re.I)
 TYPE_NAMES = {TYPE_PAL8: 'pal8', TYPE_565: 'rgb565', TYPE_1555: 'argb1555', TYPE_4444: 'argb4444'}
 
 
@@ -106,6 +109,10 @@ class Archive:
         if self.bottom_up:
             row = w * 4
             px = b''.join(px[y * row:(y + 1) * row] for y in range(h - 1, -1, -1))
+        if not self.bottom_up and SWAPPED_RB.match(self.entries[index][0].rsplit('/', 1)[-1]):
+            b = bytearray(px)                          # stored with red and blue swapped: swap back
+            b[0::4], b[2::4] = px[2::4], px[0::4]
+            px = bytes(b)
         return w, h, px
 
     def png(self, index, level=0):

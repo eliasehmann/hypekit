@@ -4,41 +4,38 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hype Toolkit</title>
+<script>{ const q = /[?&]theme=(light|modern)\b/.exec(location.search); const t = q ? q[1] : localStorage.getItem('hypekit-theme'); if (t === 'light') document.documentElement.dataset.theme = t; }</script>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="features.css">
 <script type="importmap">{"imports": {"three": "./vendor/three/three.module.min.js"}}</script>
 </head>
 <body>
-<aside class="side">
-  <div class="brand">Hype <span>Toolkit</span></div>
-  <nav>
-    <a href="#/search" data-page="search">Search</a>
-    <a href="#/sounds" data-page="sounds">Sounds</a>
-    <a href="#/script" data-page="script">Script</a>
-    <a href="#/textures" data-page="textures">Textures</a>
-    <a href="#/models" data-page="models">Models</a>
-    <a href="#/saves" data-page="saves">Saves</a>
-  </nav>
-  <div class="foot" id="info"></div>
-</aside>
-<main>
-  <header class="bar">
-    <input id="q" type="search" placeholder="Search" autocomplete="off" spellcheck="false">
-    <div id="filters" class="filters"></div>
-  </header>
-  <section id="view" class="view"></section>
-</main>
-<aside id="drawer" class="drawer" hidden>
-  <button class="x" id="drawer-close" title="Close">×</button>
-  <div id="drawer-body"></div>
-</aside>
-<footer class="player" id="player" hidden>
-  <button id="pp" class="pp" title="Play / pause (space)">▶</button>
-  <div class="meta"><div id="p-title" class="t"></div><div id="p-sub" class="s"></div></div>
-  <canvas id="wave" height="56"></canvas>
-  <div id="p-time" class="time">0:00</div>
-  <button id="p-loop" class="chip" title="Loop">Loop</button>
-  <a id="p-dl" class="chip" download>WAV</a>
-</footer>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#/">Hype <span>Toolkit</span></a>
+    <nav class="links" id="links"></nav>
+    <button class="theme-btn" id="gamebtn" title="Game folder" aria-label="Game folder"><svg viewBox="0 0 24 24"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg></button>
+    <button class="theme-btn" id="theme" title="Light / dark" aria-label="Switch theme"><i></i></button>
+  </div>
+</header>
+<main id="view"></main>
+<div id="sheet" class="sheet" hidden><div class="sheet-card"><button class="x" id="sheet-close" aria-label="Close">×</button><div id="sheet-body"></div></div></div>
+<div id="lightbox" class="lightbox" hidden></div>
+<div id="selbar" class="selbar" hidden></div>
+<div id="palette" class="palette" hidden></div>
+<div id="player" class="player" hidden>
+  <div class="wrap">
+    <div class="pctl"><button class="skip" id="p-prev" aria-label="Previous" title="Previous (P)"><svg viewBox="0 0 14 14"><path d="M2 1h2v12H2zM13 1v12L5 7z"/></svg></button>
+    <button class="pp" id="pp" aria-label="Play"></button>
+    <button class="skip" id="p-next" aria-label="Next" title="Next (N)"><svg viewBox="0 0 14 14"><path d="M10 1h2v12h-2zM1 1v12l8-6z"/></svg></button></div>
+    <div class="meta"><div class="t" id="p-title"></div><div class="s" id="p-sub"></div></div>
+    <div class="scrub"><span id="p-cur">0:00</span><canvas id="wave" height="36"></canvas><span id="p-dur">0:00</span></div>
+    <span class="qpos" id="p-q"></span>
+    <button class="chip" id="p-loop">Loop</button>
+    <a class="chip" id="p-dl">WAV</a>
+    <button class="x" id="p-close" aria-label="Close player">×</button>
+  </div>
+</div>
 <audio id="audio" preload="auto"></audio>
 <script type="module" src="app.js"></script>
 </body>

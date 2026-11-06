@@ -97,6 +97,7 @@ class Library:
         self.level_names = {}                         # level -> 'The Forest (brigand2)'
         self.errors = []
         self._vgm = {}                                # bank file -> {node index: wav path}
+        self._vgm_meta = {}                           # bank file -> {node index: seconds}
         self._vgm_lock = threading.Lock()
         self._cache = collections.OrderedDict()
         self._cache_lock = threading.Lock()
@@ -270,6 +271,24 @@ class Library:
         p = self.vgm_path(s, decode=False)
         if p:
             s.seconds = max(0, os.path.getsize(p) - 44) / (2 * s.channels * s.rate)
+        elif self.vgmstream and not s.external:
+            s.seconds = self._meta(s.file).get(s.index)
+
+    def _meta(self, bank_file):
+        """{node index: seconds} of a bank's MPEG entries from vgmstream metadata mode (fast, no decoding), cached."""
+        if bank_file not in self._vgm_meta:
+            import json
+            f = self.vgm_dir(bank_file) + '.lengths.json'
+            try:
+                with open(f, encoding='utf-8') as fh:
+                    m = {int(k): v for k, v in json.load(fh).items()}
+            except (OSError, ValueError):
+                m = vgm_lengths(self.vgmstream, bank_file, os.path.dirname(f))
+                os.makedirs(os.path.dirname(f), exist_ok=True)
+                with open(f, 'w', encoding='utf-8') as fh:
+                    json.dump(m, fh)
+            self._vgm_meta[bank_file] = m
+        return self._vgm_meta[bank_file]
 
     def vgm_path(self, s, decode=True, progress=None):
         """Decoded WAV of an MPEG entry; decode=True runs vgmstream on the whole bank the first time."""
@@ -371,6 +390,45 @@ def find_vgmstream(path=None):
         if p and os.path.isfile(p):
             return p
     return shutil.which('vgmstream-cli')
+
+
+_META_NAME = re.compile(r'^stream name: bnm/(\d+)/', re.M)
+_META_DUR = re.compile(r'^play duration: (\d+) samples', re.M)
+_META_RATE = re.compile(r'^sample rate: (\d+) Hz', re.M)
+
+
+def vgm_lengths(cli, bank_file, tmp_dir):
+    """{node index: seconds} via `vgmstream-cli -m -S 0` (metadata only). Banks with sequence entries vgmstream
+    cannot follow are read from a copy with those entries retyped (as in vgm_decode_bank). {} on failure."""
+    def run(src):
+        try:
+            r = subprocess.run([cli, '-m', '-S', '0', src], capture_output=True, text=True, errors='replace', timeout=120,
+                               creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        except (OSError, subprocess.TimeoutExpired):
+            return {}
+        out = {}
+        for block in r.stdout.split('metadata for ')[1:]:
+            n, d, rate = _META_NAME.search(block), _META_DUR.search(block), _META_RATE.search(block)
+            if n and d and rate and int(rate.group(1)):
+                out[int(n.group(1))] = round(int(d.group(1)) / int(rate.group(1)), 3)
+        return out
+    m = run(bank_file)
+    if not m:
+        b = bytearray(open(bank_file, 'rb').read())
+        h = struct.unpack_from('<11I', b, 0)
+        for i in range(h[4]):
+            o = h[3] + i * 0x5c
+            if struct.unpack_from('<I', b, o + 4)[0] != 1:
+                struct.pack_into('<I', b, o + 4, 0x0f)
+        os.makedirs(tmp_dir, exist_ok=True)
+        fixed = os.path.join(tmp_dir, 'meta_' + os.path.basename(bank_file))
+        with open(fixed, 'wb') as f:
+            f.write(b)
+        try:
+            m = run(fixed)
+        finally:
+            os.remove(fixed)
+    return m
 
 
 def vgm_decode_bank(cli, bank_file, d):

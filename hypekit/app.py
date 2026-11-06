@@ -33,32 +33,11 @@ def _chromium():
     return next((c for c in cands if c and os.path.isfile(c)), None)
 
 
-def ask_game_folder():
-    """Folder picker until the user picks a Hype install or cancels; the choice is remembered. -> folder or None."""
-    from tkinter import Tk, filedialog, messagebox
-    from . import game
-    root = Tk()
-    root.withdraw()
-    try:
-        msg = 'Hype: The Time Quest was not found.\n\nPlease choose the game folder (the one that contains Gamedata).'
-        if not messagebox.askokcancel(TITLE, msg):
-            return None
-        while True:
-            folder = filedialog.askdirectory(title='Hype: The Time Quest folder')
-            if not folder:
-                return None
-            if game.is_game(folder):
-                game.save_settings(game=os.path.abspath(folder))
-                return folder
-            if not messagebox.askretrycancel(TITLE, f'{folder}\n\nhas no Gamedata/World/Sound and Levels. Choose another folder?'):
-                return None
-    finally:
-        root.destroy()
-
-
-def run(kit, browser=False, port=0):
-    kit.build()
-    srv, url = server.serve(kit, port)
+def run(kit, browser=False, port=0, cache=None, discs=None):
+    """kit=None: no install found; the window opens on the "choose the game folder" screen."""
+    if kit:
+        kit.build()
+    srv, url = server.serve(kit, port, cache=cache, discs=discs)
     print(f'{TITLE}: {url}', flush=True)
     try:
         if not browser:
@@ -85,4 +64,5 @@ def run(kit, browser=False, port=0):
     finally:
         srv.shutdown()
         srv.server_close()
-        kit.close()
+        if srv.holder.kit:
+            srv.holder.kit.close()
