@@ -40,6 +40,20 @@ RECORDS = {
             'format': {'enum': ['pal8', 'rgb565', 'argb1555', 'argb4444', '']}, 'mips': _I, 'error': _S,
         },
     },
+    'save': {
+        'description': 'One save slot, decoded (read-only). Item and spell names are in the install language.',
+        'properties': {
+            'id': {**_S, 'description': "slot folder, e.g. 'SaveGame3'"}, 'level': _S, 'place': _S,
+            'checkpoint': _S, 'playtime': {**_I, 'description': 'seconds'}, 'modified': {**_I, 'description': 'unix time'},
+            'debug': _B, 'health': _I, 'health_max': _I, 'health_maxmax': _I, 'mana': _I, 'mana_max': _I,
+            'gold': _I, 'gold_max': _I, 'eras': {'type': 'array', 'items': _I}, 'map_destinations': {'type': 'array', 'items': _I},
+            'records': _I,
+            'inventory': {'type': 'array', 'items': {'type': 'object', 'description': 'name, type, count, max, selected, carried'}},
+            'spells': {'type': 'array', 'items': {'type': 'object', 'description': 'name, element, selected'}},
+            'armour': {'type': 'array', 'items': {'type': 'object', 'description': 'n, resistance, damaged, pieces, pieces_damaged'}},
+            'flags': {'type': 'array', 'items': {'type': 'object', 'description': 'Global DsgVar index, value, note'}},
+        },
+    },
     'perso': {
         'description': 'A character / animated figure placed in a level. Payload: glb(id, state) (glTF binary, '
                        'one node per animation channel, sprites marked extras.sprite). Records come from a one-time '

@@ -8,6 +8,7 @@
     python -m hypekit levels
     python -m hypekit persos [query] [--level fort] [--all]   characters (first run scans all levels, ~2 min)
     python -m hypekit glb <perso id> [--state N] [--out FILE]   one character as .glb
+    python -m hypekit saves | save <slot>               save slots / one slot in full
     python -m hypekit get <id>                           one record + links
     python -m hypekit export <id> [<id> ...] [--out DIR] .wav / .png
     python -m hypekit sql "<SELECT ...>"                 read-only SQL on the catalog
@@ -72,6 +73,9 @@ def main(argv=None):
     p.add_argument('query', nargs='?', default='')
     p.add_argument('--level')
     p.add_argument('--all', action='store_true')
+    sub.add_parser('saves')
+    p = sub.add_parser('save')
+    p.add_argument('slot')
     p = sub.add_parser('glb')
     p.add_argument('id')
     p.add_argument('--state', type=int)
@@ -109,8 +113,14 @@ def main(argv=None):
     try:
         kit = hypekit.open(a.game, a.cache, a.disc)
     except FileNotFoundError as ex:
-        sys.stderr.write(f'hypekit: {ex}\n')
-        return 2
+        folder = None
+        if a.cmd == 'app':                           # the desktop app asks once and remembers the folder
+            from . import app
+            folder = app.ask_game_folder()
+        if not folder:
+            sys.stderr.write(f'hypekit: {ex}\n')
+            return 2
+        kit = hypekit.open(folder, a.cache, a.disc)
     lim = a.limit or None
     try:
         if a.cmd in ('info', 'build'):
@@ -157,6 +167,17 @@ def main(argv=None):
             with open(path, 'wb') as f:
                 f.write(kit.glb(a.id, a.state))
             emit([path]) if a.json else out.write(path + '\n')
+        elif a.cmd == 'saves':
+            rows = kit.saves()
+            if a.json:
+                emit(rows)
+            else:
+                for r in rows:
+                    t = r['playtime'] or 0
+                    out.write(f"{r['id']:<11} {r['place'] + ' (' + r['level'] + ')':<34} {t // 3600}:{t // 60 % 60:02d} "
+                              f"{time.strftime('%Y-%m-%d %H:%M', time.localtime(r['modified']))}\n")
+        elif a.cmd == 'save':
+            emit(kit.save(a.slot))
         elif a.cmd == 'get':
             emit(kit.get(a.id))
         elif a.cmd == 'export':

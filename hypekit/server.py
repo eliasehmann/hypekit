@@ -12,6 +12,7 @@ JSON (GET):
   /api/script/<level>                          lines of a level with their voice sound ids
   /api/persos?q=&level=&all=1                  {status: character scan progress, items: records or null}
   /api/perso/<id>                              one character + its animated states
+  /api/saves, /api/save/<slot>                 save slots; one slot in full (stats, inventory, flags)
   /api/get/<id>                                one record + links
   /api/schema                                  JSON Schema of the records
 Payloads: /api/wav/<id> (audio/wav, Range supported), /api/png/<id>?mip=0 (image/png),
@@ -152,6 +153,10 @@ def make_handler(kit):
             if name == 'glb':
                 state = int(q['state']) if q.get('state') not in (None, '') else None
                 return self._bytes(payloads.get(('glb', arg, state), lambda: kit.glb(arg, state)), 'model/gltf-binary')
+            if name == 'saves':
+                return self._json(kit.saves())
+            if name == 'save':
+                return self._json(kit.save(arg))
             if name == 'wav':
                 return self._bytes(payloads.get(('wav', arg), lambda: kit.wav(arg)), 'audio/wav')
             if name == 'png':

@@ -1,7 +1,7 @@
 # hypekit
 
 Read *Hype: The Time Quest* game data from your own install: sounds (with names, levels, speaker and line),
-dialogue text, textures and 3D characters with their animations. It's pure Python with the standard library only, and it's read-only.
+dialogue text, textures, 3D characters with their animations, and save games. It's pure Python with the standard library only, and it's read-only.
 
 Three layers:
 
@@ -9,10 +9,10 @@ Three layers:
 |---|---|---|
 | **core** (`hypekit/`) | decoders + SQLite catalog + Python API; characters → glTF | M1 ✓, M3 ✓ |
 | **api** | CLI with `--json`, local HTTP API (`server.py`), MCP later | M1 CLI ✓, M2 HTTP ✓ |
-| **app** | web UI (`hypekit/web/`: plain HTML/JS, three.js) in a native window | M2 ✓, M3 ✓ Models |
+| **app** | web UI (`hypekit/web/`: plain HTML/JS, three.js) in a native window | M2 ✓, M3 ✓ Models, M4 ✓ Saves |
+| **build** | standalone Windows app (pywebview + PyInstaller, no Python needed) | M4 ✓ |
 
-Next: M4 save viewer, pywebview + PyInstaller Windows build ·
-M5 own MPEG decoder, macOS/Linux builds (GitHub Actions), MCP wrapper, write operations.
+Next: M5 own MPEG decoder, macOS/Linux builds (GitHub Actions), MCP wrapper, write operations.
 
 ## App
 
@@ -26,6 +26,19 @@ Keys: space = play/pause, `/` = search, Esc = close the panel.
 HTTP API (GET, JSON): `/api/info`, `/api/find?q=`, `/api/sounds|lines|textures?q=&...&limit=&offset=`,
 `/api/levels`, `/api/script/<level>`, `/api/persos?q=&level=`, `/api/perso/<id>`, `/api/get/<id>`, `/api/schema`.
 Payloads: `/api/wav/<id>`, `/api/png/<id>`, `/api/glb/<perso id>?state=N` (all support Range). The server binds 127.0.0.1 only.
+
+## Windows build
+
+```
+powershell -File tools\fetch_wheels.ps1            # once: wheels via PowerShell (pip can't get through the TLS proxy)
+python -m venv ..\work\hypekit\venv
+..\work\hypekit\venv\Scripts\python -m pip install --no-index --find-links ..\work\hypekit\wheels pywebview pyinstaller
+powershell -File tools\build_windows.ps1           # -> ..\work\hypekit\dist\HypeToolkit\HypeToolkit.exe + HypeToolkit-win64.zip
+```
+About 45 MB (20 MB zipped). It bundles vgmstream-cli (its COPYING is included) and no game files. On first start without a
+detectable install it asks for the game folder and remembers it. `HypeToolkit.exe <command>` runs CLI commands.
+Windowed build: errors go to `%LOCALAPPDATA%\hypekit\hypekit.log`; the cache is `%LOCALAPPDATA%\hypekit`.
+Python 3.10 pins: pythonnet 3.0.5, clr_loader 0.2.9, pycparser 2.23 (newer ones need 3.11).
 
 ## Python
 
@@ -41,6 +54,8 @@ kit.sql('SELECT speaker, count(*) FROM lines GROUP BY speaker')
 kit.persos('granslak', wait=True)          # characters (first call scans every level, ~1 min, then cached)
 kit.perso('fort:94c230c')['animations']   # Hype's states
 open('hype.glb', 'wb').write(kit.glb('fort:94c230c', state=5))
+kit.saves()                                # slots, newest first
+kit.save('SaveGame3')                      # health, mana, gold, inventory, spells, armour, story flags
 ```
 
 ## CLI
@@ -48,7 +63,8 @@ open('hype.glb', 'wb').write(kit.glb('fort:94c230c', state=5))
 ```
 python -m hypekit info | find <q> | sounds | lines | textures | levels | get <id> | export <id>... --out DIR
 python -m hypekit persos [q] [--level L] [--all] | glb <perso id> [--state N] [--out FILE]
-python -m hypekit sql "SELECT ..." | schema [sound|line|texture|perso] | build [--force]
+python -m hypekit saves | save <slot>
+python -m hypekit sql "SELECT ..." | schema [sound|line|texture|perso|save] | build [--force]
   --game DIR  --disc DIR (repeatable, .csb sound names)  --cache DIR  --limit N (0 = all)  --json
 ```
 

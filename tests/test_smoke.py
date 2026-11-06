@@ -72,6 +72,15 @@ class Smoke(unittest.TestCase):
         self.assertTrue(g['meshes'])
         self.assertTrue(g.get('images'), 'textures resolved from Textures.cnt')
 
+    def test_saves(self):
+        slots = self.kit.saves()
+        if not slots:
+            self.skipTest('no save games in this install')
+        s = self.kit.save(slots[0]['id'])
+        self.assertEqual(set(s) - {'place'}, set(schema.RECORDS['save']['properties']) - {'place'})
+        self.assertGreater(s['records'], 100)
+        self.assertTrue(s['health_max'])
+
     def test_not_found(self):
         with self.assertRaises(hypekit.NotFound):
             self.kit.get('nope:0')

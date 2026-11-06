@@ -54,12 +54,13 @@ async function render() {
   const { page, params } = route();
   document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.dataset.page === page));
   if (document.activeElement !== qbox) qbox.value = params.q || '';
-  qbox.placeholder = { search: 'Search everything', sounds: 'Search sounds', script: 'Search dialogue', textures: 'Search textures', models: 'Search models' }[page] || 'Search';
+  qbox.placeholder = { search: 'Search everything', sounds: 'Search sounds', script: 'Search dialogue', textures: 'Search textures', models: 'Search models', saves: 'Search' }[page] || 'Search';
   filters.innerHTML = '';
-  view.classList.toggle('full', page === 'models');
+  view.classList.toggle('full', page === 'models' || page === 'saves');
+  qbox.hidden = page === 'saves';
   if (page !== 'models') M.key = null;
   await getLevels();
-  const fn = { search: pageSearch, sounds: pageSounds, script: pageScript, textures: pageTextures, models: pageModels }[page] || pageSearch;
+  const fn = { search: pageSearch, sounds: pageSounds, script: pageScript, textures: pageTextures, models: pageModels, saves: pageSaves }[page] || pageSearch;
   try { await fn(params); } catch (e) { view.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
   if (params.play && params.play !== cur?.id) api('get/' + encodeURIComponent(params.play)).then(s => play(s)).catch(e => toast(e.message));  // deep link: ?play=<sound id>
 }
@@ -309,6 +310,41 @@ async function showModel(id, state, sameModel) {
     msg.textContent = '';
     tools.insertAdjacentHTML('beforeend', `<span class="count" style="padding:0">${r.frames} frames · ${r.duration.toFixed(1)} s</span>`);
   } catch (e) { msg.textContent = e.message || String(e); }
+}
+
+// ---- saves ----------------------------------------------------------------------------------------------
+const hms = t => t == null ? '' : `${Math.floor(t / 3600)}:${String(Math.floor(t / 60) % 60).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+
+async function pageSaves(p) {
+  const slots = await api('saves');
+  if (!slots.length) { view.innerHTML = '<div class="empty">No save games found in Gamedata/SaveGame</div>'; return; }
+  const id = p.id || slots[0].id;
+  view.innerHTML = `<div class="models"><div class="mlist"><div class="count">${slots.length} save slots</div></div><div class="sdetail"></div></div>`;
+  const list = $('.mlist', view);
+  for (const s of slots) {
+    const el = document.createElement('div');
+    el.className = 'mitem' + (s.id === id ? ' on' : '');
+    el.innerHTML = `<div class="n">${esc(s.place)}</div><div class="s">${esc(s.id)} · ${hms(s.playtime)} · ${new Date(s.modified * 1000).toLocaleString()}</div>`;
+    el.onclick = () => setParam('id', s.id);
+    list.append(el);
+  }
+  const d = $('.sdetail', view);
+  d.innerHTML = '<div class="empty">Reading the save…</div>';
+  const s = await api('save/' + encodeURIComponent(id));
+  const tile = (label, v, max) => `<div class="stat"><div class="l">${esc(label)}</div><div class="v">${v ?? '–'}${max != null ? `<small> / ${max}</small>` : ''}</div></div>`;
+  const byEl = {};
+  for (const sp of s.spells) (byEl[sp.element] ||= []).push(sp);
+  d.innerHTML = `<h3>${esc(s.place)} <span>${esc(s.level)}</span></h3>
+    <div class="count">${esc(s.id)} · checkpoint “${esc(s.checkpoint)}” · played ${hms(s.playtime)} · saved ${new Date(s.modified * 1000).toLocaleString()}${s.debug ? ' · <b style="color:var(--accent)">debug mode on</b>' : ''}</div>
+    <div class="stats">${tile('Health', s.health, s.health_max)}${tile('Mana', s.mana, s.mana_max)}${tile('Gold', s.gold, s.gold_max)}${tile('Eras open', s.eras.join(', ') || 'none')}</div>
+    <h2>Inventory</h2>
+    <div class="rows">${s.inventory.map(i => `<div class="srow"><span class="ti">${esc(i.name)}</span><span>${i.count != null ? '×' + i.count : ''}</span><span class="k">${esc(i.type)}${i.selected ? ' · selected' : ''}${i.carried ? '' : ' · count only'}</span></div>`).join('') || '<div class="count">empty</div>'}</div>
+    <h2>Spells</h2>
+    ${Object.entries(byEl).map(([el, list]) => `<div class="srow"><span class="k">${esc(el)}</span><span class="ti" style="grid-column:span 2">${list.map(x => x.selected ? `<b>${esc(x.name)}</b>` : esc(x.name)).join(' · ')}</span></div>`).join('') || '<div class="count">none</div>'}
+    <h2>Armour</h2>
+    ${s.armour.map(a => `<div class="srow"><span class="ti">Armour ${a.n}</span><span>resistance ${a.resistance ?? '–'}</span><span class="k">${a.damaged ? `damaged: pieces ${a.pieces_damaged.join(', ') || '?'} of ${a.pieces}` : `${a.pieces} pieces, intact`}</span></div>`).join('')}
+    <h2>Story flags set <span style="color:var(--dim);font-weight:400">${s.flags.length}</span></h2>
+    <div class="flags">${s.flags.map(f => `<span class="chip" title="${esc(f.note)}">#${f.index} = ${f.value}${f.note ? ' · ' + esc(f.note) : ''}</span>`).join('')}</div>`;
 }
 
 // ---- drawer ---------------------------------------------------------------------------------------------

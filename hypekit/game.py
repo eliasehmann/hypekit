@@ -57,6 +57,8 @@ def candidates():
     c = []
     if os.environ.get(ENV_GAME):
         c.append(os.environ[ENV_GAME])
+    if settings().get('game'):
+        c.append(settings()['game'])
     if sys.platform == 'win32':
         c += _ubi_ini_dirs()
         for pf in (os.environ.get('ProgramFiles(x86)'), os.environ.get('ProgramFiles'), r'C:\Games'):
@@ -88,6 +90,29 @@ def find_discs():
     if env:
         return [p for p in env.split(os.pathsep) if os.path.isdir(p)]
     return []
+
+
+def _settings_path():
+    return os.path.join(cache_root(), 'settings.json')
+
+
+def settings():
+    """Per-user settings ({'game': folder chosen in the app}); {} if none."""
+    import json
+    try:
+        with open(_settings_path(), encoding='utf-8') as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_settings(**kw):
+    import json
+    s = settings()
+    s.update(kw)
+    os.makedirs(cache_root(), exist_ok=True)
+    with open(_settings_path(), 'w', encoding='utf-8') as f:
+        json.dump(s, f, indent=1)
 
 
 def cache_root():
@@ -134,6 +159,10 @@ class Game:
     def ci_level_file(self, *parts):
         """A file under Gamedata/World/Levels (case-insensitive), None if missing."""
         return ci_path(self.levels, *parts)
+
+    def save_dir(self):
+        """Gamedata/SaveGame (case-insensitive), None if missing."""
+        return ci_path(self.gamedata, 'SaveGame')
 
     def model_levels(self):
         """Level folders that hold <level>.sna + .rtb (3D data), sorted."""

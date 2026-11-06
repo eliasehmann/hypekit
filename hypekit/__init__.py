@@ -280,6 +280,32 @@ class Kit:
         os.replace(f + '.tmp', f)
         return data
 
+    # ---- save slots ------------------------------------------------------------------------------------------
+    def saves(self):
+        """Save slots, newest first: [{id, level, place, checkpoint, playtime (s), modified (unix time)}] (fast)."""
+        from . import saves as V
+        from .soundnames import place_of
+        out = []
+        for slot, folder, mtime in V.slots(self.game):
+            try:
+                h = V.header(folder)
+            except (OSError, ValueError, IndexError):
+                continue
+            out.append(dict(id=slot, level=h['level'], place=place_of(h['level']), checkpoint=h['checkpoint'],
+                            playtime=h['playtime'], modified=int(mtime)))
+        return out
+
+    def save(self, slot):
+        """One slot in full (schema 'save'): stats, inventory, spells, armour, story flags. Loads its level once."""
+        from . import saves as V
+        from .soundnames import place_of
+        folder = next((f for s, f, _ in V.slots(self.game) if s == slot), None)
+        if not folder:
+            raise NotFound(slot)
+        r = V.summary(self.game, folder)
+        r['place'] = place_of(r['level'])
+        return r
+
     # ---- payloads (bytes) ------------------------------------------------------------------------------------
     def sound(self, rid):
         """The sounds.Sound object (for decode())."""
