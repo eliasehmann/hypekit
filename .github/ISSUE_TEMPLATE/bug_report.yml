@@ -1,0 +1,31 @@
+name: Bug report
+description: Something is decoded wrongly, crashes or doesn't show up
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Please don't attach game files (sounds, textures, saves from the game's own data). Ids and screenshots are fine.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what you got. Include the record id (e.g. `Bnk_116:0`, `fort:94c230c`) if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: info
+    attributes:
+      label: Output of `hypekit info`
+      description: For the Windows app, `HypeToolkit.exe info`. Errors of the app are in `%LOCALAPPDATA%\hypekit\hypekit.log`.
+      render: text
+  - type: input
+    id: game
+    attributes:
+      label: Game version
+      description: Language and where it comes from (original disc, re-release, ...)
+      placeholder: German, original 1999 disc
+  - type: input
+    id: system
+    attributes:
+      label: System
+      placeholder: Windows 11, HypeToolkit.exe 1.0.0 / Linux, Python 3.12
