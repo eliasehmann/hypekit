@@ -1,7 +1,8 @@
 Hype Toolkit 1.0
 
 An unofficial fan project for Hype: The Time Quest. Not affiliated with or endorsed by Ubisoft or Playmobil.
-Free to use for personal, non-commercial purposes. Provided as is, without warranty of any kind.
+Copyright (c) 2026 Elias Ehmann. Released under the MIT License (https://github.com/eliasehmann/hypekit, see LICENSE).
+Provided as is, without warranty of any kind.
 
 The toolkit contains no game files. It needs your own installed copy of the game and only reads it: nothing in
 your game folder is changed. Everything it shows (sounds, dialogue, pictures, models, saves) comes from that copy.
