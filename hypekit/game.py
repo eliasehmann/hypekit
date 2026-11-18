@@ -44,9 +44,10 @@ def _ubi_ini_dirs():
         cands.append(os.path.join(os.environ['LOCALAPPDATA'], 'VirtualStore', 'Windows', 'UbiSoft', 'Ubi.ini'))
     for f in cands:
         try:
-            for line in open(f, encoding='latin-1'):
-                if line.lower().startswith('directory='):
-                    out.append(line.split('=', 1)[1].strip())
+            with open(f, encoding='latin-1') as fh:
+                for line in fh:
+                    if line.lower().startswith('directory='):
+                        out.append(line.split('=', 1)[1].strip())
         except OSError:
             pass
     return out
