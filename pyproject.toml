@@ -1,13 +1,42 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "hypekit"
-version = "0.1.0"
-description = "Read Hype: The Time Quest game data (sounds, dialogue, textures) as plain Python data"
+dynamic = ["version"]
+description = "Read Hype: The Time Quest game data (sounds, dialogue, textures, 3D characters, saves) as plain Python data"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE.txt", "hypekit/web/fonts/OFL.txt", "hypekit/web/vendor/three/LICENSE"]
+authors = [{ name = "Elias Ehmann" }]
 requires-python = ">=3.10"
-dependencies = []          # standard library only (core); the app wrapper adds pywebview later
+dependencies = []          # the core is standard library only
+keywords = ["hype", "the time quest", "playmobil", "game data", "modding", "gltf", "extractor"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Games/Entertainment",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Multimedia :: Sound/Audio :: Conversion",
+]
+
+[project.optional-dependencies]
+app = ["pywebview"]        # native window for `hypekit app` (falls back to Edge/Chrome app mode or the browser)
+
+[project.urls]
+Homepage = "https://github.com/eliasehmann/hypekit"
+Issues = "https://github.com/eliasehmann/hypekit/issues"
+Changelog = "https://github.com/eliasehmann/hypekit/blob/main/CHANGELOG.md"
 
 [project.scripts]
 hypekit = "hypekit.cli:main"
@@ -15,5 +44,8 @@ hypekit = "hypekit.cli:main"
 [tool.setuptools]
 packages = ["hypekit"]
 
+[tool.setuptools.dynamic]
+version = { attr = "hypekit.__version__" }
+
 [tool.setuptools.package-data]
-hypekit = ["web/*"]
+hypekit = ["web/**/*"]
