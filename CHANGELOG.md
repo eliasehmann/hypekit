@@ -6,6 +6,8 @@ and the project uses [Semantic Versioning](https://semver.org/). Record shapes a
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-26
+
 ### Fixed
 - Polish release: dialogue text, speaker names and item names are read as Windows-1250. ą ć ę ł ń ż showed as
   `¹ æ ê ³ ñ ¿`, and text with ś or ź was dropped. The code page is detected from the install, shown as `encoding`
@@ -26,5 +28,6 @@ First public release.
 - Standalone Windows build (`HypeToolkit.exe`).
 - MIT licence, CI on Windows/macOS/Linux, tests that run without a game install, contributor docs.
 
-[Unreleased]: https://github.com/eliasehmann/hypekit/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/eliasehmann/hypekit/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/eliasehmann/hypekit/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/eliasehmann/hypekit/releases/tag/v1.0.0
