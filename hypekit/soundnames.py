@@ -20,7 +20,7 @@ import sys
 
 from . import bnm, csb, sna, text
 
-VERSION = 4                  # 3: text reader keeps accented lines, 4: letter-based junk filter
+VERSION = 5                  # 3: text reader keeps accented lines, 4: letter-based junk filter, 5: text code page
 
 PLACES = [   # website-tools/wiki/places.md
     ("Gogoud's Manor", 'manoir manoir2 manoir3 manoir4'), ('The Forest', 'brigand brigand2 brigand3 brigand4'),
@@ -110,6 +110,8 @@ def stamp(sound_dir, extra=()):
     fs = glob.glob(os.path.join(sound_dir, '*.bnm')) + glob.glob(os.path.join(levels, '*', '*.snd')) + \
         glob.glob(os.path.join(levels, '*', '*.lng')) + glob.glob(os.path.join(levels, 'Fix.*')) + csb_files(sound_dir, extra)
     h = VERSION
+    for c in text.install_encoding(levels).encode():      # a forced code page ($HYPEKIT_ENCODING) is another cache
+        h = (h * 1000003 + c) & 0xffffffffffff
     for f in sorted(fs):
         st = os.stat(f)
         h = (h * 1000003 + st.st_size * 31 + int(st.st_mtime)) & 0xffffffffffff
@@ -156,7 +158,7 @@ def texts(levels, lv):
     if not os.path.exists(lng):
         return {}
     out = {}
-    for seq, who, line in text.turns(text.fragments(lng)):
+    for seq, who, line in text.turns(text.fragments(lng, text.install_encoding(levels))):
         if seq and seq not in out:
             out[seq] = (who, line)
     return out

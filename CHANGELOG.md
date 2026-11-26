@@ -6,6 +6,12 @@ and the project uses [Semantic Versioning](https://semver.org/). Record shapes a
 
 ## [Unreleased]
 
+### Fixed
+- Polish release: dialogue text, speaker names and item names are read as Windows-1250. ą ć ę ł ń ż showed as
+  `¹ æ ê ³ ñ ¿`, and text with ś or ź was dropped. The code page is detected from the install, shown as `encoding`
+  in `hypekit info`, and can be forced with `$HYPEKIT_ENCODING` (for example `cp1250`). Catalogs are rebuilt once.
+  (#1)
+
 ## [1.0.0] - 2026-11-18
 
 First public release.

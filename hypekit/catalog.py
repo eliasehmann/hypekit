@@ -1,7 +1,7 @@
 """The catalog: one SQLite file per install with every sound, dialogue line and texture, plus the links between them.
 
 Tables (see schema.py for the JSON shapes, which use the same column names):
-  meta(key, value)                       schema version, game folder, source stamp
+  meta(key, value)                       schema version, game folder, text encoding, source stamp
   sounds(id, kind, title, ...)           id 'Bnk_<n>:<node>' (bank entry or track) or 'apm:<file>' (stream)
   lines(id, level, n, dialog, ...)       id '<level>:<n>'
   textures(id, archive, idx, path, ...)  id '<Textures|Vignette>:<index>'
@@ -17,7 +17,7 @@ import time
 from . import text as T
 from . import textures as X
 
-SCHEMA_VERSION = 5          # 2: MPEG lengths from vgmstream metadata, 3: text junk filter
+SCHEMA_VERSION = 6          # 2: MPEG lengths from vgmstream metadata, 3: text junk filter, 6: text code page
 
 DDL = """
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
@@ -54,6 +54,8 @@ def stamp(game, extra=()):
     for d in extra:
         fs += glob.glob(os.path.join(d, 'Sound', '*.csb')) + glob.glob(os.path.join(d, 'Sound', '*', '*.csb'))
     h = SCHEMA_VERSION
+    for c in T.install_encoding(game.levels).encode():    # a forced code page ($HYPEKIT_ENCODING) is another catalog
+        h = (h * 1000003 + c) & 0xffffffffffff
     for f in sorted(fs):
         st = os.stat(f)
         h = (h * 1000003 + st.st_size * 31 + int(st.st_mtime)) & 0xffffffffffff
@@ -116,7 +118,8 @@ def build(path, game, library, st, progress=None):
         ntex += len(ts)
     if progress:
         progress(f'{ntex} textures, {len(links)} voice/line links')
-    meta = dict(schema=SCHEMA_VERSION, stamp=st, game=game.root, built=int(time.time()),
+    meta = dict(schema=SCHEMA_VERSION, stamp=st, game=game.root, encoding=T.install_encoding(game.levels),
+                built=int(time.time()),
                 seconds=round(time.time() - t0, 1), sounds=len(rows), lines=len(lines), textures=ntex,
                 links=len(links), errors=json.dumps(library.errors[:20]))
     db.executemany('INSERT INTO meta VALUES (?,?)', [(k, str(v)) for k, v in meta.items()])
