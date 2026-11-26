@@ -114,6 +114,8 @@ hypekit sql "SELECT ..." | schema [sound|line|texture|perso|save] | build [--for
 - **Sound designer names (.csb):** only on the disc. Pass the disc folders with `--disc` or `$HYPEKIT_DISCS`.
 - **Ubi MPEG (voices, music):** `vgmstream-cli` from `$HYPEKIT_VGMSTREAM`, `vendor/vgmstream/` or `PATH`. Their
   lengths (`seconds`) stay `null` until a bank has been decoded once.
+- **Text encoding:** Windows-1252, or Windows-1250 when the install is the Polish release (detected from the text;
+  `hypekit info` shows it as `encoding`). Force one with `$HYPEKIT_ENCODING`, for example `cp1250`.
 - **Cache:** the catalog and decoded files live in `$HYPEKIT_CACHE`, else `%LOCALAPPDATA%\hypekit`,
   `~/Library/Caches/hypekit` or `~/.cache/hypekit`. It can be deleted at any time; the catalog is rebuilt in about 2 s
   when the install changes.

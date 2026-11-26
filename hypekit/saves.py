@@ -13,7 +13,7 @@ The fixed offsets below were found by comparing saves before and after known in-
 import os
 import struct
 
-from . import geo, level as L, sna
+from . import geo, level as L, sna, text as T
 
 SIZES = {0x01: 1, 0x02: 2, 0x04: 4, 0x08: 8, 0x11: 6}
 MANA, MANAMAX, GOLD, GOLDMAX, DEBUG = (0x0500, 0x4c1564), (0x0500, 0x4c1566), (0x0a00, 0x169e), (0x0a00, 0x16c4), (0x1100, 0x48b04)
@@ -190,7 +190,7 @@ def _inv_items(w):
     return out
 
 
-def _inv_names(w, items, fix_lng):
+def _inv_names(w, items, fix_lng, encoding=T.DEFAULT):
     """Item base -> display name (install language) via Fix.lng's INV strings and the char* array in block 0x0a/0."""
     try:
         lb, ld = next((base & 0xffffffff, data) for m, b, base, data in sna.read_sna(fix_lng) if (m, b) == (0x0a, 1))
@@ -208,7 +208,7 @@ def _inv_names(w, items, fix_lng):
             continue
         v = struct.unpack_from('<I', d, arr + 4 * ti)[0]
         if lb <= v < lb + len(ld):
-            out[b] = ld[v - lb:ld.index(b'\0', v - lb)].decode('cp1252')
+            out[b] = ld[v - lb:ld.index(b'\0', v - lb)].decode(encoding, 'replace')
     return out
 
 
@@ -228,7 +228,7 @@ def summary(game, folder):
                map_destinations=[d for d in dest if d not in (None, 0xfffffffe)], records=len(recs))
     # inventory: carried slot pointers (HIE fix block 0x0601) -> item superobject -> INV object -> item base
     items = _inv_items(w)
-    names = _inv_names(w, items, game.lng('Fix'))
+    names = _inv_names(w, items, game.lng('Fix'), T.install_encoding(game.levels))
     fix0a, fix06 = bases.get((0x0a, 0)), bases.get((6, 1))
     carried = set()
     for (b, o), r in recs.items():
